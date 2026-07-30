@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "@/lib/AppContext";
 import { Navigation, Sidebar } from "@/components/Navigation";
 import { DashboardView } from "@/components/DashboardView";
@@ -14,14 +14,14 @@ import { ReportsView } from "@/components/ReportsView";
 import { SettingsView } from "@/components/SettingsView";
 import { CommandCenter } from "@/components/CommandCenter";
 
-// Modal elements
+// Modal overlays
 import { GreenPointsModal } from "@/components/GreenPointsModal";
 import { MoodCheckModal } from "@/components/MoodCheckModal";
 import { BirthdayModal } from "@/components/BirthdayModal";
 import { DigitalIdModal } from "@/components/DigitalIdModal";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Activity, ShieldAlert, Cpu } from "lucide-react";
+import { Cpu, Activity, Info, Command, X } from "lucide-react";
 import { t } from "@/lib/mockData";
 
 export default function Home() {
@@ -34,8 +34,9 @@ export default function Home() {
   const [birthdayStudent, setBirthdayStudent] = useState("Abel Bekele");
   const [isDigitalIdOpen, setIsDigitalIdOpen] = useState(false);
   const [activeDigitalIdStudent, setActiveDigitalIdStudent] = useState("GNG-2026-001");
+  const [showShortcutOverlay, setShowShortcutOverlay] = useState(false);
 
-  // Custom trigger handlers
+  // Trigger handlers
   const handleTriggerBirthday = (name: string) => {
     setBirthdayStudent(name);
     setIsBirthdayOpen(true);
@@ -46,23 +47,42 @@ export default function Home() {
     setIsDigitalIdOpen(true);
   };
 
+  // Keyboard Shortcuts Listener (Ctrl+K to focus search / Esc to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setShowShortcutOverlay((prev) => !prev);
+      }
+      if (e.key === "Escape") {
+        setIsGreenPointsOpen(false);
+        setIsMoodCheckOpen(false);
+        setIsBirthdayOpen(false);
+        setIsDigitalIdOpen(false);
+        setShowShortcutOverlay(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
 
       {/* Top Header Navigation */}
       <Navigation />
 
-      {/* Main Container */}
+      {/* Main split grid */}
       <div className="flex-1 flex overflow-hidden">
 
-        {/* Left Floating Sidebar */}
+        {/* Left Collapsible Sidebar */}
         <Sidebar />
 
-        {/* Dynamic Responsive Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8 relative">
+        {/* Dynamic Workspace Container */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 relative">
 
-          {/* Quick command switcher tabs (Visible on Tablet/Mobile instead of Sidebar) */}
-          <div className="lg:hidden overflow-x-auto pb-2 flex items-center gap-1 border-b border-white/10">
+          {/* Mobile Tab Quick switcher (Visible only on Mobile) */}
+          <div className="lg:hidden overflow-x-auto pb-2 flex items-center gap-1 border-b border-zinc-900">
             {[
               "Dashboard",
               "Students",
@@ -80,7 +100,7 @@ export default function Home() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                   currentTab === tab
                     ? "bg-emerald-500 text-white shadow-md"
-                    : "bg-white/5 text-zinc-400"
+                    : "bg-zinc-900 text-zinc-400"
                 }`}
               >
                 {t(tab, language)}
@@ -88,43 +108,41 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Quick toggle to launch Principal Command Center */}
-          <div className="flex items-center justify-between flex-wrap gap-4 bg-zinc-950/40 p-5 rounded-3xl border border-white/5">
+          {/* Low-profile Command center quick trigger - Handcrafted styling */}
+          <div className="flex items-center justify-between flex-wrap gap-4 bg-zinc-900/40 p-4 rounded-2xl border border-zinc-900">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 animate-pulse">
-                <Cpu className="w-5 h-5" />
-              </div>
+              <Cpu className="w-5 h-5 text-emerald-500" />
               <div>
-                <h2 className="text-sm font-bold text-zinc-100">
-                  {language === "en" ? "Principal Command Console" : "የዳይሬክተሩ ዋና የቁጥጥር ፓነል"}
+                <h2 className="text-xs font-bold text-zinc-200">
+                  {language === "en" ? "Principal Command Center Console" : "የዳይሬክተሩ ዋና መቆጣጠሪያ ማዕከል"}
                 </h2>
                 <p className="text-[10px] text-zinc-500">
-                  {language === "en" ? "Overview of active campuses, school health indices, and system diagnostics." : "የካምፓሶች ሁኔታ፣ የተማሪዎች ስነ-ምግባር ምዘና እና የስርዓት እንቅስቃሴ መቆጣጠሪያ።"}
+                  {language === "en" ? "Real-time state telemetry, diagnostic monitors, and synchronised campus streams." : "የካምፓሶች ሁኔታ፣ የተማሪዎች ስነ-ምግባር ምዘና እና የስርዓት መቆጣጠሪያ።"}
                 </p>
               </div>
             </div>
 
             <button
               onClick={() => setCurrentTab("Command Center")}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 currentTab === "Command Center"
-                  ? "bg-emerald-500 text-white shadow-md glow-green"
-                  : "bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/15"
+                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/10"
+                  : "bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-white"
               }`}
             >
               <Activity className="w-3.5 h-3.5 animate-pulse" />
-              <span>{language === "en" ? "Launch Command Hub" : "ዋናውን የቁጥጥር ማዕከል ክፈት"}</span>
+              <span>{language === "en" ? "Launch Command Console" : "ዋናውን መቆጣጠሪያ ማዕከል ክፈት"}</span>
             </button>
           </div>
 
-          {/* Tab Views Content with elegant page slide animation */}
+          {/* Tab Views Content with fast transitions */}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentTab}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
               className="outline-none"
             >
               {currentTab === "Dashboard" && (
@@ -162,7 +180,46 @@ export default function Home() {
         </main>
       </div>
 
-      {/* Floating Interactive Overlays / Special WOW Modals */}
+      {/* Keyboard Shortcuts Dialog Overlay (Ctrl+K Guide) */}
+      <AnimatePresence>
+        {showShortcutOverlay && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-800 p-5 space-y-4 shadow-2xl text-xs text-zinc-300"
+            >
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <span className="font-bold text-zinc-200 flex items-center gap-1.5">
+                  <Command className="w-4 h-4 text-emerald-400" />
+                  Keyboard Shortcuts Guide
+                </span>
+                <button onClick={() => setShowShortcutOverlay(false)} className="text-zinc-500 hover:text-zinc-300">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between py-1">
+                  <span>Open search / Focus filter</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 font-bold">Ctrl + K</kbd>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Close dialogs / Cancel action</span>
+                  <kbd className="px-1.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-[10px] text-zinc-400 font-bold">Esc</kbd>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span>Toggle light/dark layout theme</span>
+                  <span className="text-[10px] text-zinc-500">Top-right switcher</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Special Wow Modals */}
       <AnimatePresence>
         {isGreenPointsOpen && (
           <GreenPointsModal
